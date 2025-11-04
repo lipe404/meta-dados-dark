@@ -1,0 +1,131 @@
+{% extends "base.html" %} {% block title %}Início - MetadatadDark{% endblock
+%} {% block content %}
+<div class="page-header">
+  <h2>
+    <i class="fas fa-upload"></i>
+    Gerenciador de Metadados
+  </h2>
+  <p>Faça upload de arquivos e gerencie seus metadados</p>
+</div>
+
+<div class="upload-section">
+  <div class="glass-card">
+    <h3>
+      <i class="fas fa-cloud-upload-alt"></i>
+      Upload de Arquivo
+    </h3>
+    <form
+      action="{{ url_for('upload_file') }}"
+      method="post"
+      enctype="multipart/form-data"
+      class="upload-form"
+    >
+      <div class="file-input-wrapper">
+        <input
+          type="file"
+          id="file"
+          name="file"
+          class="file-input"
+          accept=".png,.jpg,.jpeg,.gif,.bmp,.tiff,.webp,.mp3,.wav,.flac,.ogg,.m4a,.aac,.mp4,.avi,.mkv,.mov,.wmv,.flv,.webm,.pdf,.docx,.doc,.xlsx,.xls,.pptx,.txt,.zip,.rar,.7z,.tar,.gz"
+        />
+        <label for="file" class="file-label">
+          <i class="fas fa-plus"></i>
+          <span>Escolher Arquivo</span>
+        </label>
+        <div class="file-info" id="fileInfo"></div>
+      </div>
+      <button type="submit" class="btn btn-primary">
+        <i class="fas fa-upload"></i>
+        Fazer Upload
+      </button>
+    </form>
+
+    <div class="supported-formats">
+      <h4>Formatos Suportados:</h4>
+      <div class="format-grid">
+        <div class="format-item">
+          <i class="fas fa-image"></i>
+          <span>Imagens</span>
+          <small>PNG, JPG, GIF, BMP, TIFF, WebP</small>
+        </div>
+        <div class="format-item">
+          <i class="fas fa-music"></i>
+          <span>Áudio</span>
+          <small>MP3, WAV, FLAC, OGG, M4A, AAC</small>
+        </div>
+        <div class="format-item">
+          <i class="fas fa-video"></i>
+          <span>Vídeo</span>
+          <small>MP4, AVI, MKV, MOV, WMV, FLV</small>
+        </div>
+        <div class="format-item">
+          <i class="fas fa-file-alt"></i>
+          <span>Documentos</span>
+          <small>PDF, DOCX, XLSX, PPTX, TXT</small>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+{% if files %}
+<div class="files-section">
+  <div class="glass-card">
+    <h3>
+      <i class="fas fa-folder-open"></i>
+      Arquivos Carregados
+    </h3>
+    <div class="files-grid">
+      {% for file in files %}
+      <div class="file-card">
+        <div class="file-icon">
+          {% if file.type == 'image' %}
+          <i class="fas fa-image"></i>
+          {% elif file.type == 'audio' %}
+          <i class="fas fa-music"></i>
+          {% elif file.type == 'video' %}
+          <i class="fas fa-video"></i>
+          {% elif file.type == 'document' %}
+          <i class="fas fa-file-alt"></i>
+          {% else %}
+          <i class="fas fa-file"></i>
+          {% endif %}
+        </div>
+        <div class="file-info">
+          <h4>{{ file.name }}</h4>
+          <p>{{ file.size }}</p>
+          <span class="file-type">{{ file.type.title() }}</span>
+        </div>
+        <div class="file-actions">
+          <a
+            href="{{ url_for('view_metadata', filename=file.name) }}"
+            class="btn btn-small btn-primary"
+          >
+            <i class="fas fa-eye"></i>
+            Ver Metadados
+          </a>
+          <a
+            href="{{ url_for('edit_metadata', filename=file.name) }}"
+            class="btn btn-small btn-secondary"
+          >
+            <i class="fas fa-edit"></i>
+            Editar
+          </a>
+          <form
+            action="{{ url_for('delete_file', filename=file.name) }}"
+            method="post"
+            style="display: inline"
+            onsubmit="return confirm('Tem certeza que deseja deletar este arquivo?')"
+          >
+            <button type="submit" class="btn btn-small btn-danger">
+              <i class="fas fa-trash"></i>
+              Deletar
+            </button>
+          </form>
+        </div>
+      </div>
+      {% endfor %}
+    </div>
+  </div>
+</div>
+{% endif %} {% endblock %}
