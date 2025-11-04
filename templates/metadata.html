@@ -46,7 +46,8 @@
     </div>
     {% else %}
     <div class="metadata-grid">
-      {% for key, value in metadata.items() %} {% if key != 'exif' %}
+      {% for key, value in metadata.items() %} {% if key not in ['exif',
+      'exif_raw'] %}
       <div class="metadata-item">
         <label>{{ key.replace('_', ' ').title() }}:</label>
         <span>{{ value }}</span>
@@ -55,15 +56,144 @@
       <div class="metadata-section-title">
         <h4>
           <i class="fas fa-camera"></i>
-          Dados EXIF
+          Metadados EXIF - Informações da Câmera
         </h4>
       </div>
-      {% for key, value in metadata.exif.items() %}
-      <div class="metadata-item">
-        <label>{{ key }}:</label>
-        <span>{{ value }}</span>
+
+      {% if metadata.exif.camera_make or metadata.exif.camera_model %}
+      <div class="metadata-subsection">
+        <h5><i class="fas fa-camera-retro"></i> Câmera</h5>
+        {% if metadata.exif.camera_make %}
+        <div class="metadata-item">
+          <label>Fabricante:</label>
+          <span>{{ metadata.exif.camera_make }}</span>
+        </div>
+        {% endif %} {% if metadata.exif.camera_model %}
+        <div class="metadata-item">
+          <label>Modelo:</label>
+          <span>{{ metadata.exif.camera_model }}</span>
+        </div>
+        {% endif %}
       </div>
-      {% endfor %} {% endif %}
+      {% endif %} {% if metadata.exif.lens_make or metadata.exif.lens_model %}
+      <div class="metadata-subsection">
+        <h5><i class="fas fa-eye"></i> Lente</h5>
+        {% if metadata.exif.lens_make %}
+        <div class="metadata-item">
+          <label>Fabricante da Lente:</label>
+          <span>{{ metadata.exif.lens_make }}</span>
+        </div>
+        {% endif %} {% if metadata.exif.lens_model %}
+        <div class="metadata-item">
+          <label>Modelo da Lente:</label>
+          <span>{{ metadata.exif.lens_model }}</span>
+        </div>
+        {% endif %}
+      </div>
+      {% endif %} {% if metadata.exif.exposure_time or metadata.exif.f_number or
+      metadata.exif.iso or metadata.exif.focal_length %}
+      <div class="metadata-subsection">
+        <h5><i class="fas fa-sliders-h"></i> Configurações de Captura</h5>
+        {% if metadata.exif.exposure_time %}
+        <div class="metadata-item">
+          <label>Tempo de Exposição:</label>
+          <span>{{ metadata.exif.exposure_time }}</span>
+        </div>
+        {% endif %} {% if metadata.exif.f_number %}
+        <div class="metadata-item">
+          <label>Abertura (F-Stop):</label>
+          <span>{{ metadata.exif.f_number }}</span>
+        </div>
+        {% endif %} {% if metadata.exif.iso %}
+        <div class="metadata-item">
+          <label>ISO:</label>
+          <span>{{ metadata.exif.iso }}</span>
+        </div>
+        {% endif %} {% if metadata.exif.focal_length %}
+        <div class="metadata-item">
+          <label>Distância Focal:</label>
+          <span>{{ metadata.exif.focal_length }}</span>
+        </div>
+        {% endif %} {% if metadata.exif.flash %}
+        <div class="metadata-item">
+          <label>Flash:</label>
+          <span>{{ metadata.exif.flash }}</span>
+        </div>
+        {% endif %} {% if metadata.exif.white_balance %}
+        <div class="metadata-item">
+          <label>Balanço de Branco:</label>
+          <span>{{ metadata.exif.white_balance }}</span>
+        </div>
+        {% endif %}
+      </div>
+      {% endif %} {% if metadata.exif.date_taken %}
+      <div class="metadata-subsection">
+        <h5><i class="fas fa-calendar"></i> Data e Hora</h5>
+        <div class="metadata-item">
+          <label>Data/Hora da Captura:</label>
+          <span>{{ metadata.exif.date_taken }}</span>
+        </div>
+      </div>
+      {% endif %} {% if metadata.exif.gps %}
+      <div class="metadata-subsection">
+        <h5><i class="fas fa-map-marker-alt"></i> Localização GPS</h5>
+        {% if metadata.exif.gps.latitude %}
+        <div class="metadata-item">
+          <label>Latitude:</label>
+          <span>{{ metadata.exif.gps.latitude }}</span>
+        </div>
+        {% endif %} {% if metadata.exif.gps.longitude %}
+        <div class="metadata-item">
+          <label>Longitude:</label>
+          <span>{{ metadata.exif.gps.longitude }}</span>
+        </div>
+        {% endif %}
+      </div>
+      {% endif %} {% if metadata.exif.artist or metadata.exif.copyright or
+      metadata.exif.software %}
+      <div class="metadata-subsection">
+        <h5><i class="fas fa-info-circle"></i> Informações Adicionais</h5>
+        {% if metadata.exif.artist %}
+        <div class="metadata-item">
+          <label>Artista:</label>
+          <span>{{ metadata.exif.artist }}</span>
+        </div>
+        {% endif %} {% if metadata.exif.copyright %}
+        <div class="metadata-item">
+          <label>Copyright:</label>
+          <span>{{ metadata.exif.copyright }}</span>
+        </div>
+        {% endif %} {% if metadata.exif.software %}
+        <div class="metadata-item">
+          <label>Software:</label>
+          <span>{{ metadata.exif.software }}</span>
+        </div>
+        {% endif %}
+      </div>
+      {% endif %} {% endif %} {% if metadata.exif_raw %}
+      <div class="metadata-section-title">
+        <h4>
+          <i class="fas fa-code"></i>
+          Metadados EXIF Brutos (Ocultos)
+        </h4>
+      </div>
+      <details class="metadata-details">
+        <summary>Ver todos os metadados EXIF brutos</summary>
+        <div class="metadata-raw">
+          {% for ifd_name, ifd_data in metadata.exif_raw.items() %}
+          <div class="metadata-subsection">
+            <h5>{{ ifd_name }}</h5>
+            {% for tag_name, tag_value in ifd_data.items() %}
+            <div class="metadata-item">
+              <label>{{ tag_name }}:</label>
+              <span>{{ tag_value }}</span>
+            </div>
+            {% endfor %}
+          </div>
+          {% endfor %}
+        </div>
+      </details>
+      {% endif %}
     </div>
     {% endif %}
   </div>

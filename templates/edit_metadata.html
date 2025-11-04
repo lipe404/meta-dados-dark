@@ -90,16 +90,178 @@ endblock %} {% block content %}
         Edição de metadados de documentos será implementada em versões futuras.
       </div>
       {% elif file_type == 'image' %}
-      <div class="info-message">
-        <i class="fas fa-info-circle"></i>
-        Edição de metadados EXIF será implementada em versões futuras.
+      <div class="form-section">
+        <h4><i class="fas fa-camera-retro"></i> Informações da Câmera</h4>
+        <div class="form-group">
+          <label for="camera_make">Fabricante da Câmera:</label>
+          <input
+            type="text"
+            id="camera_make"
+            name="camera_make"
+            value="{{ metadata.exif.camera_make if metadata.exif and metadata.exif.camera_make else '' }}"
+            class="form-input"
+            placeholder="Ex: Canon, Nikon, Sony"
+          />
+        </div>
+        <div class="form-group">
+          <label for="camera_model">Modelo da Câmera:</label>
+          <input
+            type="text"
+            id="camera_model"
+            name="camera_model"
+            value="{{ metadata.exif.camera_model if metadata.exif and metadata.exif.camera_model else '' }}"
+            class="form-input"
+            placeholder="Ex: Canon EOS R5"
+          />
+        </div>
+      </div>
+
+      <div class="form-section">
+        <h4><i class="fas fa-eye"></i> Informações da Lente</h4>
+        <div class="form-group">
+          <label for="lens_make">Fabricante da Lente:</label>
+          <input
+            type="text"
+            id="lens_make"
+            name="lens_make"
+            value="{{ metadata.exif.lens_make if metadata.exif and metadata.exif.lens_make else '' }}"
+            class="form-input"
+            placeholder="Ex: Canon, Nikon"
+          />
+        </div>
+        <div class="form-group">
+          <label for="lens_model">Modelo da Lente:</label>
+          <input
+            type="text"
+            id="lens_model"
+            name="lens_model"
+            value="{{ metadata.exif.lens_model if metadata.exif and metadata.exif.lens_model else '' }}"
+            class="form-input"
+            placeholder="Ex: EF 24-70mm f/2.8L"
+          />
+        </div>
+      </div>
+
+      <div class="form-section">
+        <h4><i class="fas fa-info-circle"></i> Informações Adicionais</h4>
+        <div class="form-group">
+          <label for="artist">Artista:</label>
+          <input
+            type="text"
+            id="artist"
+            name="artist"
+            value="{{ metadata.exif.artist if metadata.exif and metadata.exif.artist else '' }}"
+            class="form-input"
+            placeholder="Nome do fotógrafo/artista"
+          />
+        </div>
+        <div class="form-group">
+          <label for="copyright">Copyright:</label>
+          <input
+            type="text"
+            id="copyright"
+            name="copyright"
+            value="{{ metadata.exif.copyright if metadata.exif and metadata.exif.copyright else '' }}"
+            class="form-input"
+            placeholder="Informações de copyright"
+          />
+        </div>
+        <div class="form-group">
+          <label for="software">Software:</label>
+          <input
+            type="text"
+            id="software"
+            name="software"
+            value="{{ metadata.exif.software if metadata.exif and metadata.exif.software else '' }}"
+            class="form-input"
+            placeholder="Software usado para processar"
+          />
+        </div>
+        <div class="form-group">
+          <label for="date_taken">Data/Hora da Captura:</label>
+          <input
+            type="text"
+            id="date_taken"
+            name="date_taken"
+            value="{{ metadata.exif.date_taken if metadata.exif and metadata.exif.date_taken else '' }}"
+            class="form-input"
+            placeholder="YYYY:MM:DD HH:MM:SS"
+          />
+        </div>
+      </div>
+
+      <div class="form-section">
+        <h4><i class="fas fa-map-marker-alt"></i> Localização GPS</h4>
+        <div class="form-group">
+          <label for="gps_latitude">Latitude:</label>
+          <input
+            type="number"
+            step="any"
+            id="gps_latitude"
+            name="gps_latitude"
+            {%
+            if
+            metadata.exif
+            and
+            metadata.exif.gps
+            and
+            metadata.exif.gps.latitude
+            %}
+            value="{{ metadata.exif.gps.latitude.split('°')[0] if '°' in metadata.exif.gps.latitude else metadata.exif.gps.latitude }}"
+            {%
+            endif
+            %}
+            class="form-input"
+            placeholder="Ex: -23.5505 (use negativo para Sul)"
+          />
+          <small>Use valores negativos para Sul</small>
+        </div>
+        <div class="form-group">
+          <label for="gps_longitude">Longitude:</label>
+          <input
+            type="number"
+            step="any"
+            id="gps_longitude"
+            name="gps_longitude"
+            {%
+            if
+            metadata.exif
+            and
+            metadata.exif.gps
+            and
+            metadata.exif.gps.longitude
+            %}
+            value="{{ metadata.exif.gps.longitude.split('°')[0] if '°' in metadata.exif.gps.longitude else metadata.exif.gps.longitude }}"
+            {%
+            endif
+            %}
+            class="form-input"
+            placeholder="Ex: -46.6333 (use negativo para Oeste)"
+          />
+          <small>Use valores negativos para Oeste</small>
+        </div>
+      </div>
+
+      <div class="form-actions">
+        <button type="submit" class="btn btn-primary">
+          <i class="fas fa-save"></i>
+          Salvar Metadados EXIF
+        </button>
+        <a
+          href="{{ url_for('view_metadata', filename=filename) }}"
+          class="btn btn-secondary"
+        >
+          <i class="fas fa-times"></i>
+          Cancelar
+        </a>
       </div>
       {% else %}
       <div class="info-message">
         <i class="fas fa-info-circle"></i>
         Edição de metadados não suportada para este tipo de arquivo.
       </div>
-      {% endif %} {% if file_type == 'audio' %}
+      {% endif %} {% if file_type == 'audio' or file_type == 'image' %} {% if
+      file_type == 'audio' %}
       <div class="form-actions">
         <button type="submit" class="btn btn-primary">
           <i class="fas fa-save"></i>
@@ -113,7 +275,7 @@ endblock %} {% block content %}
           Cancelar
         </a>
       </div>
-      {% endif %}
+      {% endif %} {% endif %}
     </form>
 
     <div class="current-metadata">
@@ -123,13 +285,38 @@ endblock %} {% block content %}
       </h4>
       <div class="metadata-grid">
         {% for key, value in metadata.items() %} {% if key not in ['exif',
-        'error'] %}
+        'exif_raw', 'error'] %}
         <div class="metadata-item">
           <label>{{ key.replace('_', ' ').title() }}:</label>
           <span>{{ value }}</span>
         </div>
         {% endif %} {% endfor %}
       </div>
+      {% if metadata.exif %}
+      <h4 style="margin-top: 20px">
+        <i class="fas fa-camera"></i>
+        Metadados EXIF Atuais
+      </h4>
+      <div class="metadata-grid">
+        {% for key, value in metadata.exif.items() %} {% if key != 'gps' %}
+        <div class="metadata-item">
+          <label>{{ key.replace('_', ' ').title() }}:</label>
+          <span>{{ value }}</span>
+        </div>
+        {% endif %} {% endfor %} {% if metadata.exif.gps %} {% if
+        metadata.exif.gps.latitude %}
+        <div class="metadata-item">
+          <label>GPS Latitude:</label>
+          <span>{{ metadata.exif.gps.latitude }}</span>
+        </div>
+        {% endif %} {% if metadata.exif.gps.longitude %}
+        <div class="metadata-item">
+          <label>GPS Longitude:</label>
+          <span>{{ metadata.exif.gps.longitude }}</span>
+        </div>
+        {% endif %} {% endif %}
+      </div>
+      {% endif %}
     </div>
     {% endif %}
   </div>

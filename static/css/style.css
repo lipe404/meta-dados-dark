@@ -556,6 +556,85 @@ body::before {
   border-bottom: 2px solid var(--primary-color);
 }
 
+.metadata-subsection {
+  grid-column: 1 / -1;
+  margin: 15px 0;
+  padding: 15px;
+  background: rgba(99, 102, 241, 0.05);
+  border: 1px solid rgba(99, 102, 241, 0.2);
+  border-radius: 10px;
+}
+
+.metadata-subsection h5 {
+  color: var(--primary-color);
+  font-size: 1rem;
+  margin-bottom: 15px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding-bottom: 8px;
+  border-bottom: 1px solid rgba(99, 102, 241, 0.3);
+}
+
+.metadata-details {
+  grid-column: 1 / -1;
+  margin-top: 20px;
+}
+
+.metadata-details summary {
+  cursor: pointer;
+  padding: 12px 16px;
+  background: var(--glass-bg);
+  border: 1px solid var(--border-color);
+  border-radius: 10px;
+  color: var(--text-primary);
+  font-weight: 600;
+  transition: all 0.3s ease;
+  user-select: none;
+}
+
+.metadata-details summary:hover {
+  background: rgba(99, 102, 241, 0.1);
+  border-color: var(--primary-color);
+}
+
+.metadata-raw {
+  margin-top: 15px;
+  padding: 15px;
+  background: var(--glass-bg);
+  border: 1px solid var(--border-color);
+  border-radius: 10px;
+  max-height: 400px;
+  overflow-y: auto;
+}
+
+.form-section {
+  margin-bottom: 30px;
+  padding: 20px;
+  background: rgba(99, 102, 241, 0.05);
+  border: 1px solid rgba(99, 102, 241, 0.2);
+  border-radius: 10px;
+}
+
+.form-section h4 {
+  color: var(--primary-color);
+  font-size: 1.1rem;
+  margin-bottom: 20px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding-bottom: 10px;
+  border-bottom: 1px solid rgba(99, 102, 241, 0.3);
+}
+
+.form-group small {
+  display: block;
+  color: var(--text-muted);
+  font-size: 0.85rem;
+  margin-top: 5px;
+  font-style: italic;
+}
+
 /* Form Styles */
 .edit-form {
   margin-bottom: 30px;

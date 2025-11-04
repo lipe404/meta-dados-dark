@@ -8,7 +8,7 @@ from datetime import datetime
 
 # Bibliotecas para metadados
 from PIL import Image
-from PIL.ExifTags import TAGS
+from PIL.ExifTags import TAGS, GPSTAGS
 import mutagen
 from mutagen.id3 import ID3, TIT2, TPE1, TALB, TDRC, TCON
 import PyPDF2
@@ -17,6 +17,8 @@ import openpyxl
 import csv
 import zipfile
 import json as json_lib
+import piexif
+from fractions import Fraction
 
 app = Flask(__name__)
 app.config['SECRET_KEY'] = 'your-secret-key-here'
@@ -63,7 +65,7 @@ class MetadataExtractor:
 
     @staticmethod
     def extract_image_metadata(filepath):
-        """Extrai metadados de imagens"""
+        """Extrai metadados de imagens com EXIF detalhado"""
         try:
             with Image.open(filepath) as image:
                 metadata = {
@@ -75,17 +77,135 @@ class MetadataExtractor:
                     'height': image.size[1]
                 }
 
-                # EXIF data
-                exifdata = image.getexif()
-                if exifdata:
-                    exif_metadata = {}
-                    for tag_id in exifdata:
-                        tag = TAGS.get(tag_id, tag_id)
-                        data = exifdata.get(tag_id)
-                        if isinstance(data, bytes):
-                            data = data.decode('utf-8', errors='ignore')
-                        exif_metadata[tag] = data
-                    metadata['exif'] = exif_metadata
+                # Extrair EXIF usando piexif para melhor suporte
+                try:
+                    exif_dict = piexif.load(filepath)
+                except Exception:
+                    exif_dict = {}
+
+                # Informações básicas da imagem
+                exif_info = {}
+
+                # Mapeamento de tags EXIF mais relevantes
+                if '0th' in exif_dict:
+                    if piexif.ImageIFD.Make in exif_dict['0th']:
+                        exif_info['camera_make'] = exif_dict['0th'][piexif.ImageIFD.Make].decode(
+                            'utf-8', errors='ignore')
+                    if piexif.ImageIFD.Model in exif_dict['0th']:
+                        exif_info['camera_model'] = exif_dict['0th'][piexif.ImageIFD.Model].decode(
+                            'utf-8', errors='ignore')
+                    if piexif.ImageIFD.Software in exif_dict['0th']:
+                        exif_info['software'] = exif_dict['0th'][piexif.ImageIFD.Software].decode(
+                            'utf-8', errors='ignore')
+                    if piexif.ImageIFD.Artist in exif_dict['0th']:
+                        exif_info['artist'] = exif_dict['0th'][piexif.ImageIFD.Artist].decode(
+                            'utf-8', errors='ignore')
+                    if piexif.ImageIFD.Copyright in exif_dict['0th']:
+                        exif_info['copyright'] = exif_dict['0th'][piexif.ImageIFD.Copyright].decode(
+                            'utf-8', errors='ignore')
+
+                # Configurações da câmera
+                if 'Exif' in exif_dict:
+                    if piexif.ExifIFD.DateTimeOriginal in exif_dict['Exif']:
+                        exif_info['date_taken'] = exif_dict['Exif'][piexif.ExifIFD.DateTimeOriginal].decode(
+                            'utf-8', errors='ignore')
+                    if piexif.ExifIFD.ExposureTime in exif_dict['Exif']:
+                        exp_time = exif_dict['Exif'][piexif.ExifIFD.ExposureTime]
+                        if isinstance(exp_time, tuple):
+                            exif_info['exposure_time'] = f"1/{int(exp_time[1]/exp_time[0])}s" if exp_time[
+                                1] > exp_time[0] else f"{exp_time[0]/exp_time[1]}s"
+                        else:
+                            exif_info['exposure_time'] = f"{exp_time}s"
+                    if piexif.ExifIFD.FNumber in exif_dict['Exif']:
+                        fnum = exif_dict['Exif'][piexif.ExifIFD.FNumber]
+                        if isinstance(fnum, tuple):
+                            exif_info['f_number'] = f"f/{fnum[0]/fnum[1]}"
+                        else:
+                            exif_info['f_number'] = f"f/{fnum}"
+                    if piexif.ExifIFD.ISOSpeedRatings in exif_dict['Exif']:
+                        exif_info['iso'] = str(
+                            exif_dict['Exif'][piexif.ExifIFD.ISOSpeedRatings])
+                    if piexif.ExifIFD.FocalLength in exif_dict['Exif']:
+                        focal = exif_dict['Exif'][piexif.ExifIFD.FocalLength]
+                        if isinstance(focal, tuple):
+                            exif_info['focal_length'] = f"{focal[0]/focal[1]}mm"
+                        else:
+                            exif_info['focal_length'] = f"{focal}mm"
+                    if piexif.ExifIFD.Flash in exif_dict['Exif']:
+                        exif_info['flash'] = "Sim" if exif_dict['Exif'][piexif.ExifIFD.Flash] & 0x1 else "Não"
+                    if piexif.ExifIFD.WhiteBalance in exif_dict['Exif']:
+                        exif_info['white_balance'] = "Automático" if exif_dict['Exif'][piexif.ExifIFD.WhiteBalance] == 0 else "Manual"
+
+                # Informações da lente
+                if 'Exif' in exif_dict:
+                    if piexif.ExifIFD.LensMake in exif_dict['Exif']:
+                        exif_info['lens_make'] = exif_dict['Exif'][piexif.ExifIFD.LensMake].decode(
+                            'utf-8', errors='ignore')
+                    if piexif.ExifIFD.LensModel in exif_dict['Exif']:
+                        exif_info['lens_model'] = exif_dict['Exif'][piexif.ExifIFD.LensModel].decode(
+                            'utf-8', errors='ignore')
+
+                # Informações de localização GPS
+                if 'GPS' in exif_dict:
+                    gps_info = {}
+                    if piexif.GPSIFD.GPSLatitude in exif_dict['GPS'] and piexif.GPSIFD.GPSLatitudeRef in exif_dict['GPS']:
+                        lat = exif_dict['GPS'][piexif.GPSIFD.GPSLatitude]
+                        lat_ref = exif_dict['GPS'][piexif.GPSIFD.GPSLatitudeRef].decode(
+                            'utf-8')
+                        if isinstance(lat[0], tuple):
+                            lat_deg = lat[0][0]/lat[0][1] + lat[1][0] / \
+                                lat[1][1]/60 + lat[2][0]/lat[2][1]/3600
+                            gps_info['latitude'] = f"{lat_deg:.6f}° {lat_ref}"
+                        else:
+                            gps_info['latitude'] = f"{lat[0]}° {lat_ref}"
+
+                    if piexif.GPSIFD.GPSLongitude in exif_dict['GPS'] and piexif.GPSIFD.GPSLongitudeRef in exif_dict['GPS']:
+                        lon = exif_dict['GPS'][piexif.GPSIFD.GPSLongitude]
+                        lon_ref = exif_dict['GPS'][piexif.GPSIFD.GPSLongitudeRef].decode(
+                            'utf-8')
+                        if isinstance(lon[0], tuple):
+                            lon_deg = lon[0][0]/lon[0][1] + lon[1][0] / \
+                                lon[1][1]/60 + lon[2][0]/lon[2][1]/3600
+                            gps_info['longitude'] = f"{lon_deg:.6f}° {lon_ref}"
+                        else:
+                            gps_info['longitude'] = f"{lon[0]}° {lon_ref}"
+
+                    if gps_info:
+                        exif_info['gps'] = gps_info
+
+                # Todos os dados EXIF brutos (para metadados ocultos)
+                if exif_dict:
+                    metadata['exif_raw'] = {}
+                    for ifd in exif_dict:
+                        if ifd != 'thumbnail':
+                            metadata['exif_raw'][ifd] = {}
+                            for tag in exif_dict[ifd]:
+                                tag_name = TAGS.get(
+                                    tag, tag) if ifd == '0th' or ifd == '1st' else tag
+                                value = exif_dict[ifd][tag]
+                                if isinstance(value, bytes):
+                                    try:
+                                        value = value.decode(
+                                            'utf-8', errors='ignore')
+                                    except:
+                                        value = str(value)
+                                elif isinstance(value, tuple) and len(value) > 0:
+                                    if isinstance(value[0], tuple):
+                                        # Fração
+                                        try:
+                                            value = str(
+                                                value[0][0] / value[0][1])
+                                        except:
+                                            value = str(value)
+                                    else:
+                                        value = str(value)
+                                else:
+                                    value = str(value)
+                                metadata['exif_raw'][ifd][str(
+                                    tag_name)] = value
+
+                if exif_info:
+                    metadata['exif'] = exif_info
 
                 return metadata
         except Exception as e:
@@ -359,8 +479,92 @@ def save_metadata(filename):
                 flash('Metadados de áudio salvos com sucesso!', 'success')
 
         elif file_type == 'image':
-            # Para imagens, seria necessário usar bibliotecas específicas para editar EXIF
-            flash('Edição de metadados de imagem em desenvolvimento', 'info')
+            # Editar metadados EXIF de imagens
+            try:
+                exif_dict = piexif.load(filepath)
+                if not exif_dict:
+                    exif_dict = {'0th': {}, 'Exif': {}, 'GPS': {}, '1st': {}}
+
+                # Editar informações básicas
+                if 'artist' in request.form and request.form['artist']:
+                    exif_dict['0th'][piexif.ImageIFD.Artist] = request.form['artist'].encode(
+                        'utf-8')
+                if 'copyright' in request.form and request.form['copyright']:
+                    exif_dict['0th'][piexif.ImageIFD.Copyright] = request.form['copyright'].encode(
+                        'utf-8')
+                if 'software' in request.form and request.form['software']:
+                    exif_dict['0th'][piexif.ImageIFD.Software] = request.form['software'].encode(
+                        'utf-8')
+                if 'camera_make' in request.form and request.form['camera_make']:
+                    exif_dict['0th'][piexif.ImageIFD.Make] = request.form['camera_make'].encode(
+                        'utf-8')
+                if 'camera_model' in request.form and request.form['camera_model']:
+                    exif_dict['0th'][piexif.ImageIFD.Model] = request.form['camera_model'].encode(
+                        'utf-8')
+
+                # Editar configurações da câmera
+                if 'date_taken' in request.form and request.form['date_taken']:
+                    date_str = request.form['date_taken'].replace(
+                        ' ', ':').replace('-', ':')
+                    exif_dict['Exif'][piexif.ExifIFD.DateTimeOriginal] = date_str.encode(
+                        'utf-8')
+                    exif_dict['Exif'][piexif.ExifIFD.DateTimeDigitized] = date_str.encode(
+                        'utf-8')
+                    exif_dict['0th'][piexif.ImageIFD.DateTime] = date_str.encode(
+                        'utf-8')
+
+                # Editar informações da lente
+                if 'lens_make' in request.form and request.form['lens_make']:
+                    exif_dict['Exif'][piexif.ExifIFD.LensMake] = request.form['lens_make'].encode(
+                        'utf-8')
+                if 'lens_model' in request.form and request.form['lens_model']:
+                    exif_dict['Exif'][piexif.ExifIFD.LensModel] = request.form['lens_model'].encode(
+                        'utf-8')
+
+                # Editar GPS (latitude e longitude)
+                if 'gps_latitude' in request.form and request.form['gps_latitude']:
+                    try:
+                        lat = float(request.form['gps_latitude'])
+                        lat_ref = 'N' if lat >= 0 else 'S'
+                        lat = abs(lat)
+                        lat_deg = int(lat)
+                        lat_min = int((lat - lat_deg) * 60)
+                        lat_sec = ((lat - lat_deg) * 60 - lat_min) * 60
+                        exif_dict['GPS'][piexif.GPSIFD.GPSLatitude] = (
+                            (int(lat_deg * 100), 100),
+                            (int(lat_min * 100), 100),
+                            (int(lat_sec * 10000), 10000)
+                        )
+                        exif_dict['GPS'][piexif.GPSIFD.GPSLatitudeRef] = lat_ref.encode(
+                            'utf-8')
+                    except ValueError:
+                        pass
+
+                if 'gps_longitude' in request.form and request.form['gps_longitude']:
+                    try:
+                        lon = float(request.form['gps_longitude'])
+                        lon_ref = 'E' if lon >= 0 else 'W'
+                        lon = abs(lon)
+                        lon_deg = int(lon)
+                        lon_min = int((lon - lon_deg) * 60)
+                        lon_sec = ((lon - lon_deg) * 60 - lon_min) * 60
+                        exif_dict['GPS'][piexif.GPSIFD.GPSLongitude] = (
+                            (int(lon_deg * 100), 100),
+                            (int(lon_min * 100), 100),
+                            (int(lon_sec * 10000), 10000)
+                        )
+                        exif_dict['GPS'][piexif.GPSIFD.GPSLongitudeRef] = lon_ref.encode(
+                            'utf-8')
+                    except ValueError:
+                        pass
+
+                # Salvar EXIF de volta no arquivo
+                exif_bytes = piexif.dump(exif_dict)
+                piexif.insert(exif_bytes, filepath)
+
+                flash('Metadados EXIF salvos com sucesso!', 'success')
+            except Exception as e:
+                flash(f'Erro ao salvar metadados EXIF: {str(e)}', 'error')
 
         else:
             flash(
